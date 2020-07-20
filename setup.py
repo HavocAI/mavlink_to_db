@@ -14,5 +14,6 @@ setup(
         'console_scripts': ['mavlink-influxdb=mavlink_influxdb:main'],
     },
 
+    setup_requires=['mypy'],
     install_requires=['pymavlink', 'influxdb']
 )
