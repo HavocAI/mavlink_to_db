@@ -6,7 +6,7 @@ Each message type maps to the InfluxDB measurement, tagged with the file name an
 
 This tool was inspired my [Maverick's mavlogd tool](https://goodrobots.github.io/maverick/current/#/modules/analysis), but is standalone and does not make assumptions about the vehicle type. Unlike mavlogd, this tool does not maintain a log index. Instead, this can be done with Grafana table driven by the following [Flux](https://www.influxdata.com/products/flux/) query:
 ```
-data = from(bucket: "mavlink/autogen")
+data = from(bucket: "mavlink")
   |> range(start: -1)
   |> filter(fn: (r) =>
     r._measurement == "ATT" and
@@ -22,6 +22,7 @@ join(tables: {start:start, end:end}, on: ["filename", "vehicle"])
     filename: r.filename,
     vehicle: r.vehicle
   }))
+  |> group()
   // Safety limit to prevent accidental massive queries
   |> limit(n: 500)
 ```
