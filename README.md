@@ -4,7 +4,7 @@ Script to upload ArduPilot or PX4 (not tested) dataflash logs (`.BIN`) files to 
 
 Each message type maps to the InfluxDB measurement, tagged with the file name and optionally a vehicle name.
 
-This tool was inspired my [Maverick's mavlogd tool](https://goodrobots.github.io/maverick/current/#/modules/analysis), but is standalone and does not make assumptions about the vehicle type. Unlike mavlogd, this tool does not maintain a log index. Instead, this can be done with Grafana table driven by the following [Flux](https://www.influxdata.com/products/flux/) query:
+This tool was inspired by [Maverick's mavlogd tool](https://goodrobots.github.io/maverick/current/#/modules/analysis), but is standalone and does not make assumptions about the vehicle type. Unlike mavlogd, this tool does not maintain a log index. Instead, this can be done with Grafana table driven by the following [Flux](https://www.influxdata.com/products/flux/) query:
 ```
 data = from(bucket: "mavlink")
   |> range(start: -1)
