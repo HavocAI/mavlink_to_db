@@ -14,10 +14,15 @@ buildPythonApplication {
     src = lib.cleanSource ./.;
   };
 
-  nativeBuildInputs = [ mypy ];
+  nativeBuildInputs = [
+    mypy
+  ] ++ lib.optionals nixShell [
+    # Development dependencies
+    autopep8
+    pylint
+    rope
+  ];
   propagatedBuildInputs = [ pymavlink influxdb ];
-  # Devlopment dependencies
-  buildInputs = lib.optionals nixShell [ autopep8 pylint rope ];
 
   meta = with lib; {
     description = "Upload MAVLink dataflash logs to InfluxDB";
