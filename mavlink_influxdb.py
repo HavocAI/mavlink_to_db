@@ -71,27 +71,37 @@ def main() -> None:
         fields = {}
         for field_name in entry.get_fieldnames():
             field = getattr(entry, field_name)
-            # Skip NaNs, otherwise add data to fields
-            if isinstance(field, float):
-                if not math.isnan(field):
-                    fields[field_name] = field
-            else:
-                fields[field_name] = field
+            # Skip NaNs
+            if isinstance(field, float) and math.isnan(field):
+                continue
+            # Skip fields that can't be decoded as UTF-8, as the Python client
+            # and perhaps InfluxDB itself can't handle it.
+            if isinstance(field, bytes):
+                try:
+                    field.decode('utf-8')
+                except UnicodeDecodeError:
+                    _logger.debug("skipping non UTF-8 field: %s.%s=%s",
+                                  msg_type, field_name, field)
+                    continue
+
+            fields[field_name] = field
 
         json_body: Dict[str, Any] = {
-            'database': args.database,
-            'time_precision': 'ns',
             'measurement': msg_type,
             'time': timestamp_ns,
-            'tags': tags,
             'fields': fields
         }
         json_points.append(json_body)
-        counter += 1
         # Batch writes to influxdb, much faster
-        if counter > 0 and counter % 20000 == 0:
-            client.write_points(json_points)
+        if len(json_points) > 20000:
+            client.write_points(json_points, time_precision='n',
+                                database=args.database, tags=tags)
             json_points = []  # Clear out json_points after bulk write
+
+    # Flush remaining points
+    if len(json_points) > 0:
+        client.write_points(json_points, time_precision='n',
+                            database=args.database, tags=tags)
 
 
 if __name__ == "__main__":
