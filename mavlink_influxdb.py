@@ -51,11 +51,11 @@ def main() -> None:
         verify_ssl=bool(args.certificate),
         cert=args.certificate)
 
-    tags: Dict[str, str] = {
+    common_tags: Dict[str, str] = {
         'filename': os.path.basename(args.filename)
     }
     if args.vehicle:
-        tags['vehicle'] = args.vehicle
+        common_tags['vehicle'] = args.vehicle
 
     json_points: List[Dict[str, Any]] = []
     counter = 0
@@ -86,22 +86,29 @@ def main() -> None:
 
             fields[field_name] = field
 
+        tags = {}
+        if entry.fmt.instance_field is not None:
+            tags['instance'] = fields[entry.fmt.instance_field]
+
         json_body: Dict[str, Any] = {
             'measurement': msg_type,
             'time': timestamp_ns,
+            'tags': tags,
             'fields': fields
         }
+
         json_points.append(json_body)
         # Batch writes to influxdb, much faster
         if len(json_points) > 20000:
             client.write_points(json_points, time_precision='n',
-                                database=args.database, tags=tags)
+                                database=args.database, tags=common_tags)
             json_points = []  # Clear out json_points after bulk write
 
     # Flush remaining points
     if len(json_points) > 0:
         client.write_points(json_points, time_precision='n',
-                            database=args.database, tags=tags)
+                            database=args.database, tags=common_tags)
+        pass
 
 
 if __name__ == "__main__":
