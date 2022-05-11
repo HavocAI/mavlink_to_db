@@ -58,7 +58,6 @@ def main() -> None:
         common_tags['vehicle'] = args.vehicle
 
     json_points: List[Dict[str, Any]] = []
-    counter = 0
 
     # Iterate through logfile, process data and import into InfluxDB
     while True:
@@ -108,7 +107,6 @@ def main() -> None:
     if len(json_points) > 0:
         client.write_points(json_points, time_precision='n',
                             database=args.database, tags=common_tags)
-        pass
 
 
 if __name__ == "__main__":
