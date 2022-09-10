@@ -10,13 +10,13 @@
     eachSystem allSystems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
     in {
-      defaultPackage = pkgs.python3Packages.callPackage ./. { };
+      packages.default = pkgs.python3Packages.callPackage ./. { };
 
-      defaultApp = mkApp { drv = self.defaultPackage.${system}; };
+      apps.default = mkApp { drv = self.packages.${system}.default; };
 
       devShell = import ./shell.nix { inherit pkgs; };
     }) //
     eachSystem [ "x86_64-linux" ] (system: {
-      hydraJobs.build = self.defaultPackage.${system};
+      hydraJobs.build = self.packages.${system}.default;
     });
 }
