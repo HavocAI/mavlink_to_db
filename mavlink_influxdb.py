@@ -18,7 +18,8 @@ def main() -> None:
     parser.add_argument('filename', help="Log filename")
     parser.add_argument('--url', default='http://localhost:8086',
                         help="InfluxDB server url")
-    parser.add_argument('--token', help="InfluxDB API token")
+    parser.add_argument('--token', help="InfluxDB API token",
+                        default="XjQImCgfKhqasojfaJcTa3eQgzi26ZnTtQnHY8Hp4pCFlzhrRG7P4LMLUGFAPVolt1aBffNVyj4b-zCMtBcxtA==")
     parser.add_argument('--bucket', default='mav_rocket',
                         help="InfluxDB bucket name")
     parser.add_argument('--vehicle',
@@ -29,7 +30,7 @@ def main() -> None:
 
     client = influxdb_client.InfluxDBClient(
         url=args.url,
-        token="XjQImCgfKhqasojfaJcTa3eQgzi26ZnTtQnHY8Hp4pCFlzhrRG7P4LMLUGFAPVolt1aBffNVyj4b-zCMtBcxtA==",
+        token=args.token,
         org="HavocAI",
         bucket=args.bucket
         )
