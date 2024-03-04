@@ -6,7 +6,7 @@ import math
 import os.path
 from typing import Any, Dict, List, TextIO
 
-import influxdb  # type: ignore
+import influxdb_client  # type: ignore
 from pymavlink.DFReader import DFMessage, DFReader_binary  # type: ignore
 
 _logger = logging.getLogger('mavlink_influxdb')
@@ -16,40 +16,25 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Upload dataflash logs to InfluxDB.")
     parser.add_argument('filename', help="Log filename")
-    parser.add_argument('--hostname', required=True,
-                        help="InfluxDB server hostname")
-    parser.add_argument('--port', type=int, default=8086,
-                        help="InfluxDB server port")
-    parser.add_argument('--certificate', help="InfluxDB client certificate")
-    parser.add_argument('--username',
-                        help="InfluxDB username", default='mavlink')
-    parser.add_argument('--password-file', type=argparse.FileType('r'),
-                        help="File containing InfluxDB password")
-    parser.add_argument('--database', default='mavlink',
-                        help="InfluxDB database name")
+    parser.add_argument('--url', default='http://localhost:8086',
+                        help="InfluxDB server url")
+    parser.add_argument('--token', help="InfluxDB API token")
+    parser.add_argument('--bucket', default='mav_rocket',
+                        help="InfluxDB bucket name")
     parser.add_argument('--vehicle',
                         help="Vehicle name (stored in 'vehicle' tag)")
     args = parser.parse_args()
 
     log = DFReader_binary(args.filename, False)
 
-    password: str
-    if args.password_file:
-        password_file: TextIO
-        with args.password_file as password_file:
-            password = password_file.read().rstrip('\r\n')
-    else:
-        password = 'mavlink'
+    client = influxdb_client.InfluxDBClient(
+        url=args.url,
+        token="XjQImCgfKhqasojfaJcTa3eQgzi26ZnTtQnHY8Hp4pCFlzhrRG7P4LMLUGFAPVolt1aBffNVyj4b-zCMtBcxtA==",
+        org="HavocAI",
+        bucket=args.bucket
+        )
 
-    client = influxdb.InfluxDBClient(
-        host=args.hostname,
-        port=args.port,
-        database=args.database,
-        username=args.username,
-        password=password,
-        ssl=bool(args.certificate),
-        verify_ssl=bool(args.certificate),
-        cert=args.certificate)
+    write_api = client.write_api(write_options=influxdb_client.client.write_api.SYNCHRONOUS)
 
     common_tags: Dict[str, str] = {
         'filename': os.path.basename(args.filename)
@@ -57,7 +42,7 @@ def main() -> None:
     if args.vehicle:
         common_tags['vehicle'] = args.vehicle
 
-    json_points: List[Dict[str, Any]] = []
+    line_protocol_data: List[str] = []
 
     # Iterate through logfile, process data and import into InfluxDB
     while True:
@@ -89,24 +74,36 @@ def main() -> None:
         if entry.fmt.instance_field is not None:
             tags['instance'] = fields[entry.fmt.instance_field]
 
-        json_body: Dict[str, Any] = {
-            'measurement': msg_type,
-            'time': timestamp_ns,
-            'tags': tags,
-            'fields': fields
-        }
+        if not tags:
+            tags = {'default_tag': 'default_value'}
 
-        json_points.append(json_body)
+        fields_str = []
+        for k, v in fields.items():
+            if isinstance(v, str) and v not in ['t', 'T', 'true', 'True', 'TRUE', 'f', 'F', 'false', 'False', 'FALSE']:
+                v = f'"{v}"'
+            fields_str.append(f'{k}={v}')
+
+        line_protocol = f"{msg_type},{','.join([f'{k}={v}' for k, v in tags.items()])} {','.join(fields_str)} {timestamp_ns}"
+
+        line_protocol_data.append(line_protocol)
+
         # Batch writes to influxdb, much faster
-        if len(json_points) > 20000:
-            client.write_points(json_points, time_precision='n',
-                                database=args.database, tags=common_tags)
-            json_points = []  # Clear out json_points after bulk write
+        if len(line_protocol_data) > 20000:
+            try:
+                write_api.write(args.bucket, "HavocAI", line_protocol_data)
+            except Exception as e:
+                _logger.error(f"Error writing to InfluxDB: {e}")
+            finally:
+                line_protocol_data = []  # Clear out after bulk write
 
     # Flush remaining points
-    if len(json_points) > 0:
-        client.write_points(json_points, time_precision='n',
-                            database=args.database, tags=common_tags)
+    if len(line_protocol_data) > 0:
+        try:
+            write_api.write(args.bucket, "HavocAI", line_protocol_data)
+        except Exception as e:
+            _logger.error(f"Error writing to InfluxDB: {e}")
+        finally:
+            line_protocol_data = []  # Clear out after bulk write
 
 
 if __name__ == "__main__":
