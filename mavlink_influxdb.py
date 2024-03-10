@@ -19,7 +19,7 @@ def main() -> None:
     parser.add_argument('--url', default='http://localhost:8086',
                         help="InfluxDB server url")
     parser.add_argument('--token', help="InfluxDB API token",
-                        default="Sisp44nQHVdnYXGnTy3eza515Z6Wrumx62vwd_In5tFBUkHZ9OtWFaFJNex7sl0NdmU9p9lf8eRDviz2YrXbnQ==")
+                        default="c2rA6X7Tqcdq3POyl5iJ3b6WKg8OSjdcNuF3NAhz-ws221snHZdUyjcXCFYNPsFIBB_yEjiFAoSLIZpXzzYIRg==")
     parser.add_argument('--bucket', default='mav_rocket',
                         help="InfluxDB bucket name")
     parser.add_argument('--vehicle',
