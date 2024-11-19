@@ -1,6 +1,14 @@
-# mavlink_influxdb
+# mavlink_to_db
 
-Script to upload ArduPilot or PX4 (not tested) dataflash logs (`.BIN`) files to InfluxDB, typically for use with a visualization tool such as Grafana.
+(Fork of https://github.com/lopsided98/mavlink_influxdb)
+
+This repository contains scripts to parse and upload ArduPilot or PX4 (not tested) dataflash logs (`.BIN`) files to databses, typically for use with a visualization tool such as Grafana.
+
+Currently supported databases are:
+
+- InfluxDB
+- PostgreSQL / TimescaleDB
+- Clickhouse
 
 Each message type maps to the InfluxDB measurement, tagged with the file name and optionally a vehicle name.
 
